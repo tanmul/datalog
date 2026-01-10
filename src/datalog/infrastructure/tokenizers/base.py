@@ -1,5 +1,5 @@
 
-class Tokenizer(Object):
+class Tokenizer(object):
 
     @staticmethod
     def tokenize(sql : str):

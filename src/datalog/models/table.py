@@ -4,5 +4,6 @@ from dataclasses import dataclass
 class Table:
     name : str
     column : set
-    parents : set
-    children : set
+    description : str = ''
+    load_sql : str
+    direct_descendents : str
