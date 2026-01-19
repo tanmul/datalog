@@ -11,6 +11,17 @@ class TableId:
     name : str
     schema : str
 
+    @classmethod
+    def from_string(cls, table_str : str, default_schema : str = None):
+        assert type(table_str) == 'str', "from_string argument must be a str"
+
+        # TODO: Use a parser here?
+        split_table_str = table_str.rsplit('.', maxsplit=1)
+        if len(split_table_str) <= 1:
+            assert default_schema, "Non-prefixed table names must be provided a default schema"
+            return TableId(split_table_str[0], default_schema)
+        return TableId(split_table_str[1], split_table_str[0])
+
 @dataclass(slots=True)
 class Table:
     """A table entity representing relevant metadata of a database Table"""
