@@ -13,6 +13,10 @@ class Catalog(object):
 
     def __init__(self, tables : Dict[TableId, Table]):
         self._tables : Dict[TableId, Table] = tables
+
+        # Indexes
+        self._name_index = dict()
+        self._column_index = dict()
     
     @cached_property
     def _dep_graph(self) -> DependencyGraph:
@@ -22,16 +26,20 @@ class Catalog(object):
         """Invalidates the cached dependency graph property. Forcing another lazy instantiation"""
         self.__dict__.pop('_dep_graph', None)
 
-    def index(self) -> Dict[str, List[TableId]]:
+    def index(self):
+        """Clears and indexes all identifying filters for quicker searches"""
+        # We clear the indexes
         self._name_index = dict()
         self._column_index = dict()
-        self._ancestor_index = dict()
+
+        # Now we repopulate them
         for table_id, table in self._tables.items():
-            self._name_index[table.name] = self._name_index.get(table.name, []).append(table_id)
-            self._name_index[table.name] = self._name_index.get(table.name, []).append(table_id)
-            self._name_index[table.name] = self._name_index.get(table.name, []).append(table_id)
-            self._name_index[table.name] = self._name_index.get(table.name, []).append(table_id)
-        return index
+            # Setting name index
+            self._name_index[table.name.lower()] = self._name_index.get(table.name.lower(), []).append(table_id)
+
+            # Setting column index
+            for column in table.columns:
+                self._column_index[column.lower()] = self._column_index.get(column, []).append(table_id)
     
     # Mutation methods
     def add_table(self):
@@ -43,14 +51,11 @@ class Catalog(object):
     def update_table_metadata(self):
         pass
 
-    def refresh(self):
-        pass
-
     def save(self):
         pass
     
     # Search methods
-    def search(self, term : str, filter : Optional[str] = None):
+    def search(self, term : str, filter : Optional[List[str]] = None):
         """
         A universal search, that searches across all possible filters
         
@@ -67,9 +72,28 @@ class Catalog(object):
                     results.append(table)
         else:
             # Indexed Searches
+            self.index()
 
+            if not isinstance(filter, (str, list)):
+                raise TypeError("Filter must be a string or a list of strings")
+            
+            if isinstance(filter, str):
+                filter = [filter]
+
+            if not all(field not in ['name', 'column'] for field in filter):
+                raise ValueError("Currently supported filters are 'name' and 'column'")
+            
+            res = []
+            if 'name' in filter:
+                res.extend(self._name_index.get(term))
+            if 'column' in filter:
+                res.extend(self._column_index.get(term))
+                
 
         return results
+    
+    def get_table(self, id : TableId):
+        return self._tables[id]
 
     # Dependency Methods
     @staticmethod
@@ -84,18 +108,21 @@ class Catalog(object):
         raise TypeError("Unsupported argument! Must be one of str, TableId, Table")
 
     def get_upstream(self, table : Union[str, TableId, Table]):
-        return self._dep_graph.get_upstream(Catalog._standardize_table_input(table))
+        return self._dep_graph.get_upstream(Catalog._standardize_table_id_input(table))
     
     def get_downstream(self, table : Union[str, TableId, Table]):
-        return self._dep_graph.get_downstream(Catalog._standardize_table_input(table))
+        return self._dep_graph.get_downstream(Catalog._standardize_table_id_input(table))
 
-    # @classmethod
-    # def __new__(cls, *args, **kwargs):
-    #     if not cls._instance:
-    #         cls._instance = super().__new__(cls(*args, *kwargs))
-    #     return cls._instance
-    
+    # Builder factories
     @classmethod
     def build_from_dict(cls, table_metadata_mapping : Dict):
         for table, metadata in table_metadata_mapping:
             pass
+    
+    @classmethod
+    def build_from_sqlalchemy(cls, engine):
+        pass
+
+    @classmethod
+    def build_from_sql(cls):
+        pass
