@@ -1,9 +1,12 @@
 from typing import Dict, List, Iterable, Optional
-from ..models.table import Table, TableId
+from ..domain.models.table import Table, TableId
 import re
 from ..domain.dependency_graph import DependencyGraph
+from ..domain.catalog_data import CatalogData
 from functools import cached_property
 from typing import Union
+
+from .catalog_builders.sqlalchemy_catalog_builder import SqlAlchemyCatalogBuilder
 
 class Catalog(object):
     """
@@ -11,16 +14,16 @@ class Catalog(object):
 
     _instance = None
 
-    def __init__(self, tables : Dict[TableId, Table]):
-        self._tables : Dict[TableId, Table] = tables
+    def __init__(self, catalog_data : CatalogData):
+        self._data : CatalogData = catalog_data
 
-        # Indexes
+        # Auxiliary Indexes
         self._name_index = dict()
         self._column_index = dict()
     
     @cached_property
     def _dep_graph(self) -> DependencyGraph:
-        return DependencyGraph(table_map=self._tables)
+        return DependencyGraph(table_map=self._data.table_map)
 
     def _invalidate_dep_graph(self):
         """Invalidates the cached dependency graph property. Forcing another lazy instantiation"""
@@ -33,7 +36,7 @@ class Catalog(object):
         self._column_index = dict()
 
         # Now we repopulate them
-        for table_id, table in self._tables.items():
+        for table_id, table in self._data.table_map.items():
             # Setting name index
             self._name_index[table.name.lower()] = self._name_index.get(table.name.lower(), []).append(table_id)
 
@@ -67,7 +70,7 @@ class Catalog(object):
             pattern = re.compile(f'.*{term}.*')
 
             results = []
-            for table in self._tables.values():
+            for table in self._data.table_map.values():
                 if pattern.search(table.search_expr):
                     results.append(table)
         else:
@@ -93,7 +96,7 @@ class Catalog(object):
         return results
     
     def get_table(self, id : TableId):
-        return self._tables[id]
+        return self._data.table_map[id]
 
     # Dependency Methods
     @staticmethod
@@ -116,13 +119,13 @@ class Catalog(object):
     # Builder factories
     @classmethod
     def build_from_dict(cls, table_metadata_mapping : Dict):
-        for table, metadata in table_metadata_mapping:
-            pass
+        raise NotImplementedError("Not currently supported")
     
     @classmethod
     def build_from_sqlalchemy(cls, engine):
-        pass
+        class_data = SqlAlchemyCatalogBuilder(engine).build()
+        return cls(class_data)
 
     @classmethod
     def build_from_sql(cls):
-        pass
+        raise NotImplementedError("Not currently supported")

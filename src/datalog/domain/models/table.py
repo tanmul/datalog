@@ -25,8 +25,6 @@ class TableId:
 @dataclass(slots=True)
 class Table:
     """A table entity representing relevant metadata of a database Table"""
-    # Creating an id that uniquely identifies a Table
-    id : TableId
     # Instance variables (What defines a table object?)
     name : str
     schema : str
@@ -34,6 +32,9 @@ class Table:
     description : Optional[str] = None
     load_sql : Optional[str] = None
     direct_ancestors : Optional[set[TableId]] = None
+
+    # Creating an id that uniquely identifies a Table
+    id : TableId = TableId(name=name, schema=schema)
 
     # A string representation used for universal searching
     _search_expr : Optional[str] = None
