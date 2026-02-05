@@ -1,0 +1,11 @@
+[project]
+name = "datalog"
+version = "0.1.0"
+requires-python = ">=3.11.3"
+
+dependencies = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-ra"

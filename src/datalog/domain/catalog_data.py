@@ -1,4 +1,4 @@
-from ..models.table import Table, TableId
+from .models.table import Table, TableId
 
 from typing import Dict
 

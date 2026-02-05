@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import cached_property
 from typing import Iterable, Optional
 
@@ -34,10 +34,13 @@ class Table:
     direct_ancestors : Optional[set[TableId]] = None
 
     # Creating an id that uniquely identifies a Table
-    id : TableId = TableId(name=name, schema=schema)
+    id : TableId = field(init=False)
 
     # A string representation used for universal searching
     _search_expr : Optional[str] = None
+
+    def __post_init__(self):
+        self.id : TableId = TableId(name=self.name, schema=self.schema)
 
     @property
     def search_expr(self):
